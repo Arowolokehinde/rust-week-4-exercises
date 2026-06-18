@@ -24,6 +24,7 @@ pub struct Point<T> {
 impl<T> Point<T> {
     pub fn new(x: T, y: T) -> Self {
         // TODO: Implement constructor for Point
+        Point { x, y }
     }
 }
 
@@ -31,6 +32,8 @@ impl<T> Point<T> {
 pub trait BitcoinSerialize {
     fn serialize(&self) -> Vec<u8> {
         // TODO: Implement serialization to bytes
+        vec![]
+
     }
 }
 
@@ -133,5 +136,10 @@ impl TryFrom<&[u8]> for LegacyTransaction {
 impl BitcoinSerialize for LegacyTransaction {
     fn serialize(&self) -> Vec<u8> {
         // TODO: Serialize only version and lock_time (simplified)
+        let mut bytes = vec![];
+        bytes.extend_from_slice(&self.version.to_le_bytes());
+        bytes.extend_from_slice(&self.lock_time.to_le_bytes());
+        bytes
+        // todo!()
     }
 }
