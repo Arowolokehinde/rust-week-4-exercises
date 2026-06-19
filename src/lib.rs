@@ -1,4 +1,4 @@
-use std::str::FromStr;
+// use std::str::FromStr;
 use thiserror::Error;
 
 // Custom errors for Bitcoin operations
@@ -33,7 +33,6 @@ pub trait BitcoinSerialize {
     fn serialize(&self) -> Vec<u8> {
         // TODO: Implement serialization to bytes
         vec![]
-
     }
 }
 
@@ -140,7 +139,20 @@ pub struct OutPoint {
 // Simple CLI argument parser
 pub fn parse_cli_args(args: &[String]) -> Result<CliCommand, BitcoinError> {
     // TODO: Match args to "send" or "balance" commands and parse required arguments
-    todo!()
+    match args {
+        [cmd] if cmd == "balance" => Ok(CliCommand::Balance),
+        [cmd, amount_str, address] if cmd == "send" => {
+            let amount = amount_str
+                .parse::<u64>()
+                .map_err(|e| BitcoinError::ParseError(e.to_string()))?;
+            Ok(CliCommand::Send {
+                amount,
+                address: address.clone(),
+            })
+        }
+        _ => Err(BitcoinError::ParseError("Unknown command".to_string())),
+    }
+    // todo!()
 }
 
 pub enum CliCommand {
@@ -153,11 +165,35 @@ impl TryFrom<&[u8]> for LegacyTransaction {
     type Error = BitcoinError;
 
     fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
-        // TODO: Parse binary data into a LegacyTransaction
-        // Minimum length is 10 bytes (4 version + 4 inputs count + 4 lock_time)
-        todo!()
-    }
+        if data.len() < 10 {
+            return Err(BitcoinError::InvalidTransaction);
+        }
 
+        let version = i32::from_le_bytes(
+            data[0..4]
+                .try_into()
+                .map_err(|_| BitcoinError::InvalidTransaction)?,
+        );
+
+        let inputs_count = u32::from_le_bytes(
+            data[4..8]
+                .try_into()
+                .map_err(|_| BitcoinError::InvalidTransaction)?,
+        ) as usize;
+
+        let lock_time = u32::from_le_bytes(
+            data[data.len() - 4..]
+                .try_into()
+                .map_err(|_| BitcoinError::InvalidTransaction)?,
+        );
+
+        Ok(LegacyTransaction {
+            version,
+            inputs: Vec::with_capacity(inputs_count),
+            outputs: vec![],
+            lock_time,
+        })
+    }
 }
 
 // Custom serialization for transaction
